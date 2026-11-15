@@ -1,0 +1,138 @@
+import type { Comparison } from "Compare"
+import type { Maybe } from "Maybe"
+
+import {} from "Bifunctor"
+import {} from "Compare"
+import List from "List"
+import { Just, Nothing } from "Maybe"
+import {} from "Monad"
+
+
+
+alias Rank = Integer
+type Heap a = EmptyHeap | HeapMin(a, Rank, Heap a, Heap a) | HeapMax(a, Rank, Heap a, Heap a)
+interface HeapOrdered a {
+  prefer :: Heap a -> Heap a -> Boolean
+}
+instance Comparable a => HeapOrdered a {
+  prefer = (a, b) => where(#[a, b]) {
+    #[HeapMin(_a, _, _, _), HeapMin(_b, _, _, _)] =>
+      _a < _b
+
+    #[HeapMax(_a, _, _, _), HeapMax(_b, _, _, _)] =>
+      _a > _b
+
+    #[_, _] =>
+      true
+  }
+}
+export sameType = (a, b) => where(#[a, b]) {
+  #[EmptyHeap, EmptyHeap] =>
+    true
+
+  #[HeapMin(_, _, _, _), HeapMin(_, _, _, _)] =>
+    true
+
+  #[HeapMax(_, _, _, _), HeapMax(_, _, _, _)] =>
+    true
+
+  _ =>
+    false
+}
+export empty = EmptyHeap
+export isEmpty = where {
+  EmptyHeap =>
+    true
+
+  _ =>
+    false
+}
+export singleton = HeapMax($, 1, EmptyHeap, EmptyHeap)
+export singletonMin = HeapMin($, 1, EmptyHeap, EmptyHeap)
+export rank = where {
+  EmptyHeap =>
+    0
+
+  HeapMax(_, r, _, _) =>
+    r
+
+  HeapMin(_, r, _, _) =>
+    r
+}
+merge :: (Comparable a, Eq a) => Heap a -> Heap a -> Heap a
+merge = (a, b) => {
+  node = (raw, n0, n1) => where(#[n0, n1]) {
+    #[HeapMin(_n0, rank0, _, _), HeapMin(_n1, rank1, _, _)] =>
+      Just(
+        if (rank0 < rank1) {
+          HeapMin(raw, rank0 + 1, n1, n0)
+        } else {
+          HeapMin(raw, rank1 + 1, n0, n1)
+        },
+      )
+
+    #[HeapMax(_n0, rank0, _, _), HeapMax(_n1, rank1, _, _)] =>
+      Just(
+        if (rank0 < rank1) {
+          HeapMax(raw, rank0 + 1, n1, n0)
+        } else {
+          HeapMax(raw, rank1 + 1, n0, n1)
+        },
+      )
+
+    _ =>
+      Nothing
+  }
+  return where(#[a, b]) {
+    #[EmptyHeap, _b] =>
+      _b
+
+    #[_a, EmptyHeap] =>
+      _a
+
+    #[HeapMin(_, _, _, _), HeapMax(_, _, _, _)] =>
+      EmptyHeap
+
+    #[HeapMax(_, _, _, _), HeapMin(_, _, _, _)] =>
+      EmptyHeap
+
+    #[HeapMin(_a, aRank, aLeft, aRight), HeapMin(_b, bRank, bLeft, bRight)] =>
+      (
+        if (prefer(a, b)) {
+          node(_a, aLeft, merge(aRight, b)) ?? EmptyHeap
+        } else {
+          node(_b, bLeft, merge(bRight, a)) ?? EmptyHeap
+        }
+      )
+
+    #[HeapMax(_a, aRank, aLeft, aRight), HeapMax(_b, bRank, bLeft, bRight)] =>
+      (
+        if (prefer(a, b)) {
+          node(_a, aLeft, merge(aRight, b)) ?? EmptyHeap
+        } else {
+          node(_b, bLeft, merge(bRight, a)) ?? EmptyHeap
+        }
+      )
+  }
+}
+// export insert = (a, b) => = merge(singleton(a), b)
+export root = where {
+  HeapMin(_a, _, _, _) =>
+    Just(_a)
+
+  HeapMax(_a, _, _, _) =>
+    Just(_a)
+
+  EmptyHeap =>
+    Nothing
+}
+export deleteRoot = where {
+  EmptyHeap =>
+    EmptyHeap
+
+  HeapMax(_, _, left, right) =>
+    merge(left, right)
+
+  HeapMin(_, _, left, right) =>
+    merge(left, right)
+}

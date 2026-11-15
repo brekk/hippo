@@ -1,0 +1,26 @@
+import { assertEquals, test } from "Test"
+
+import Heap from "@/Hippo"
+
+
+
+test(
+  "Heaps have an intrinsic order: max",
+  () => assertEquals(prefer(Heap.singleton(4), Heap.singleton(7)), false),
+)
+test(
+  "Heaps have an intrinsic order: empty",
+  () => assertEquals(prefer(Heap.empty, Heap.singleton(7)), true),
+)
+test(
+  "Heaps have an intrinsic order: max out of order",
+  () => assertEquals(prefer(Heap.singleton(100), Heap.singleton(7)), true),
+)
+test(
+  "Heaps (with min sorting) have an intrinsic order: min",
+  () => assertEquals(prefer(Heap.singletonMin(4), Heap.singletonMin(7)), true),
+)
+test(
+  "Heaps (with min sorting) have an intrinsic order: min out of order",
+  () => assertEquals(prefer(Heap.singletonMin(100), Heap.singletonMin(7)), false),
+)
