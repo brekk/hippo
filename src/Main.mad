@@ -1,7 +1,19 @@
+import Array from "Array"
 import IO from "IO"
+import List from "List"
+
+import Hippo from "@/Hippo"
+
+
 
 main = () => {
   pipe(
-    IO.pTrace("Main file for:"),
-  )("hippo")
+    Hippo.fromList,
+    IO.pTrace("HEAPS OF NUMBERS"),
+    // maxHeapify(10, 10, Array.fromList([]))
+  )(List.range(0, 10))
+  pipe(
+    Hippo.heapSort,
+    IO.pTrace("Not it"),
+  )([10, 9, 8, 2, 4, 1, 3, 6, 7, 5])
 }

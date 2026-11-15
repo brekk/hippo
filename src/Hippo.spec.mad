@@ -1,22 +1,61 @@
 import { Just } from "Maybe"
+import Maybe from "Maybe"
 import { assertEquals, test } from "Test"
 
-import Heap from "@/Hippo"
+import Hippo from "@/Hippo"
 
 
 
-test(
-  "Heaps have an intrinsic order: max",
-  () => assertEquals(
-    (Heap.root(Heap.singleton(4)) ?? -1) < (Heap.root(Heap.singleton(7)) ?? -1),
-    false,
-  ),
+rootElse = pipe(
+  Hippo.root,
+  Maybe.fromMaybe(-1),
 )
 test(
-  "Heaps have an intrinsic order: empty",
-  () => assertEquals(prefer(Heap.empty, Heap.singleton(7)), true),
+  "Hippos have an intrinsic order: max",
+  () => assertEquals(rootElse(Hippo.singleton(4)) < rootElse(Hippo.singleton(7)), true),
+)
+test("Hippo.empty", () => assertEquals(rootElse(Hippo.singleton(4)) < rootElse(Hippo.empty), false))
+test(
+  "Hippo.isEmpty",
+  () => do {
+    _ <- assertEquals(Hippo.isEmpty(Hippo.singleton(4)), false)
+    return assertEquals(Hippo.isEmpty(Hippo.empty), true)
+  },
 )
 test(
-  "Heaps have an intrinsic order: max out of order",
-  () => assertEquals(prefer(Heap.singleton(100), Heap.singleton(7)), true),
+  "Hippo.rank",
+  () => do {
+    _ <- assertEquals(Hippo.rank(Hippo.singleton(4)), 1)
+    return assertEquals(Hippo.rank(Hippo.empty), 0)
+  },
+)
+import IO from "IO"
+
+
+
+test(
+  "Hippo.merge",
+  () => do {
+    four = Hippo.singleton(4)
+    seven = Hippo.singleton(7)
+    merged = Hippo.merge(four, seven)
+    _ <- assertEquals(
+      merged,
+      Hippo.Heap(
+        7,
+        2,
+        Hippo.Heap(7, 1, Hippo.empty, Hippo.empty),
+        Hippo.Heap(4, 1, Hippo.empty, Hippo.empty),
+      ),
+    )
+    return assertEquals(
+      Hippo.deleteRoot(merged),
+      Hippo.Heap(
+        4,
+        2,
+        Hippo.Heap(7, 1, Hippo.empty, Hippo.empty),
+        Hippo.Heap(4, 1, Hippo.empty, Hippo.empty),
+      ),
+    )
+  },
 )

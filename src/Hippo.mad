@@ -5,6 +5,8 @@ import Array from "Array"
 import {} from "Bifunctor"
 import { EQ, GT, LT } from "Compare"
 import {} from "Compare"
+import Fn from "Function"
+import IO from "IO"
 import List from "List"
 import { Just, Nothing } from "Maybe"
 import {} from "Monad"
@@ -12,25 +14,22 @@ import {} from "Monad"
 
 
 alias Rank = Integer
-type Heap a = EmptyHeap | Heap(a, Rank, Heap a, Heap a)
-compareHeaps :: (Comparable a, Eq a) => Heap a -> Heap a -> Comparison
-compareHeaps = (a, b) => where(#[a, b]) {
-  #[Heap(_a, _, _, _), Heap(_b, _, _, _)] =>
-    _a < _b ? LT : _a == _b ? EQ : GT
-
-  _ =>
-    LT
-}
-instance (Comparable a,
-Eq a) => Comparable (Heap a) {
-  compare = compareHeaps
-}
+export type Heap a = EmptyHeap | Heap(a, Rank, Heap a, Heap a)
+// compareHeaps :: (Comparable a, Eq a) => Heap a -> Heap a -> Comparison
+// compareHeaps = (a, b) => where(#[a, b]) {
+//   #[Heap(_, _a, _, _), Heap(_, _b, _, _)] =>
+//     _a < _b ? LT : _a == _b ? EQ : GT
+//
+//   _ =>
+//     LT
+// }
+derive Comparable Heap
 interface (Comparable a,
 Eq a) => MaxHeap a {
   maxHeapify :: Integer -> Integer -> Array a -> Array a
 }
 instance (Comparable a,
-Eq a) => MaxHeap (Heap a) {
+Eq a) => MaxHeap a {
   maxHeapify = (i, size, xs) => {
     //  (i smaller than left or right child?)
     l = i * 2
@@ -56,16 +55,6 @@ Eq a) => MaxHeap (Heap a) {
     }
   }
 }
-export sameType = (a, b) => where(#[a, b]) {
-  #[EmptyHeap, EmptyHeap] =>
-    true
-
-  #[Heap(_, _, _, _), Heap(_, _, _, _)] =>
-    true
-
-  _ =>
-    false
-}
 export empty = EmptyHeap
 export isEmpty = where {
   EmptyHeap =>
@@ -75,7 +64,6 @@ export isEmpty = where {
     false
 }
 export singleton = Heap($, 1, EmptyHeap, EmptyHeap)
-export singletonMin = Heap($, 1, EmptyHeap, EmptyHeap)
 export rank = where {
   EmptyHeap =>
     0
@@ -83,21 +71,8 @@ export rank = where {
   Heap(_, r, _, _) =>
     r
 }
-merge :: (Comparable a, Eq a) => Heap a -> Heap a -> Heap a
-merge = (a, b) => {
-  node = (raw, n0, n1) => where(#[n0, n1]) {
-    #[Heap(_n0, rank0, _, _), Heap(_n1, rank1, _, _)] =>
-      Just(
-        if (rank0 < rank1) {
-          Heap(raw, rank0 + 1, n1, n0)
-        } else {
-          Heap(raw, rank1 + 1, n0, n1)
-        },
-      )
-
-    _ =>
-      Nothing
-  }
+merge :: (MaxHeap a, Show a, Eq a, Comparable a) => Heap a -> Heap a -> Heap a
+export merge = (a, b) => {
   return where(#[a, b]) {
     #[EmptyHeap, _b] =>
       _b
@@ -106,16 +81,22 @@ merge = (a, b) => {
       _a
 
     #[Heap(_a, aRank, aLeft, aRight), Heap(_b, bRank, bLeft, bRight)] =>
-      (
-        if (_a < _b) {
-          node(_a, aLeft, merge(aRight, b)) ?? EmptyHeap
-        } else {
-          node(_b, bLeft, merge(bRight, a)) ?? EmptyHeap
-        }
-      )
+      if (aRank < bRank) {
+        Heap(_a, aRank + 1, a, b)
+      } else {
+        Heap(_b, bRank + 1, b, a)
+      }
   }
 }
-// export insert = (a, b) => = merge(singleton(a), b)
+insert :: (Show a, Comparable a) => a -> Heap a -> Heap a
+export insert = pipe(
+  singleton,
+  merge,
+)
+export insertB = (a, h) => pipe(
+  singleton,
+  merge($, h),
+)(a)
 export root = where {
   Heap(_a, _, _, _) =>
     Just(_a)
@@ -130,3 +111,44 @@ export deleteRoot = where {
   Heap(_, _, left, right) =>
     merge(left, right)
 }
+foldLeft = (fn, acc, xs) => where(xs) {
+  [x, ...rest] =>
+    foldLeft(fn, fn(acc, x), rest)
+
+  [] =>
+    acc
+}
+// fromList :: List a -> Heap a 
+export fromList = foldLeft((a, b) => insert(b, a), empty)
+export toList = where {
+  EmptyHeap =>
+    []
+
+  Heap(i, rk, l, r) =>
+    [i, ...toList(merge(l, r))]
+}
+// unfoldRight :: (b -> Maybe #[a, b]) -> b -> List a
+/*
+unfoldRight = (fn, state) => { 
+  go = (#[x, _state]) => where (_state) { 
+    Nothing => []
+    Just(vv) => map(List.concat(vv), go(fn(_state)))
+  }
+  return go(fn(state))
+}
+*/
+
+unfoldRight = (step, seed) => {
+  go = (#[agg, o]) => where(o) {
+    Nothing =>
+      agg
+
+    Just(vv) =>
+      map(List.concat(vv), go(step(o)))
+  }
+  return go(step(seed))
+}
+export heapSort = pipe(
+  fromList,
+  toList,
+)
