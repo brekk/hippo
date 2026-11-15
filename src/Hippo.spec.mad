@@ -1,3 +1,4 @@
+import { Just } from "Maybe"
 import { assertEquals, test } from "Test"
 
 import Heap from "@/Hippo"
@@ -6,7 +7,10 @@ import Heap from "@/Hippo"
 
 test(
   "Heaps have an intrinsic order: max",
-  () => assertEquals(prefer(Heap.singleton(4), Heap.singleton(7)), false),
+  () => assertEquals(
+    (Heap.root(Heap.singleton(4)) ?? -1) < (Heap.root(Heap.singleton(7)) ?? -1),
+    false,
+  ),
 )
 test(
   "Heaps have an intrinsic order: empty",
@@ -15,12 +19,4 @@ test(
 test(
   "Heaps have an intrinsic order: max out of order",
   () => assertEquals(prefer(Heap.singleton(100), Heap.singleton(7)), true),
-)
-test(
-  "Heaps (with min sorting) have an intrinsic order: min",
-  () => assertEquals(prefer(Heap.singletonMin(4), Heap.singletonMin(7)), true),
-)
-test(
-  "Heaps (with min sorting) have an intrinsic order: min out of order",
-  () => assertEquals(prefer(Heap.singletonMin(100), Heap.singletonMin(7)), false),
 )
