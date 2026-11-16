@@ -82,9 +82,9 @@ export merge = (a, b) => {
 
     #[Heap(_a, aRank, aLeft, aRight), Heap(_b, bRank, bLeft, bRight)] =>
       if (aRank < bRank) {
-        Heap(_a, aRank + 1, a, b)
+        Heap(_a, aRank + 1, merge(aLeft, aRight), b)
       } else {
-        Heap(_b, bRank + 1, b, a)
+        Heap(_b, bRank + 1, a, merge(bLeft, bRight))
       }
   }
 }
@@ -127,17 +127,6 @@ export toList = where {
   Heap(i, rk, l, r) =>
     [i, ...toList(merge(l, r))]
 }
-// unfoldRight :: (b -> Maybe #[a, b]) -> b -> List a
-/*
-unfoldRight = (fn, state) => { 
-  go = (#[x, _state]) => where (_state) { 
-    Nothing => []
-    Just(vv) => map(List.concat(vv), go(fn(_state)))
-  }
-  return go(fn(state))
-}
-*/
-
 unfoldRight = (step, seed) => {
   go = (#[agg, o]) => where(o) {
     Nothing =>
